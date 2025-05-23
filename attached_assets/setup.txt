@@ -1,0 +1,586 @@
+#!/bin/bash
+
+# Create directories
+mkdir -p client/src/{components,pages} server/src/{routes,middleware,db/migrations}
+
+# Create client files
+cat > client/package.json << 'EOF'
+{
+  "name": "markdown-converter-client",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "marked": "^14.1.2",
+    "@radix-ui/react-button": "^1.0.3",
+    "react-query": "^3.39.3",
+    "wouter": "^3.3.5",
+    "framer-motion": "^11.11.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.0",
+    "autoprefixer": "^10.4.0"
+  }
+}
+EOF
+
+cat > client/vite.config.ts << 'EOF'
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': 'http://localhost:8080',
+      '/ws': {
+        target: 'ws://localhost:8080',
+        ws: true
+      }
+    }
+  }
+})
+EOF
+
+cat > client/tailwind.config.js << 'EOF'
+module.exports = {
+  content: ['./src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+EOF
+
+cat > client/src/index.css << 'EOF'
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f4f4f4;
+}
+EOF
+
+cat > client/src/App.tsx << 'EOF'
+import { Route, Router } from 'wouter';
+import Home from './pages/Home';
+import { QueryClient, QueryClientProvider } from 'react-query';
+
+const queryClient = new QueryClient();
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <Route path="/" component={Home} />
+      </Router>
+    </QueryClientProvider>
+  );
+}
+
+export default App;
+EOF
+
+cat > client/src/main.tsx << 'EOF'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+EOF
+
+cat > client/src/vite-env.d.ts << 'EOF'
+/// <reference types="vite/client" />
+EOF
+
+cat > client/src/pages/Home.tsx << 'EOF'
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Button } from '@radix-ui/react-button';
+import { useQuery } from 'react-query';
+import { marked } from 'marked';
+import AdBanner from '../components/AdBanner';
+
+const Home = () => {
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>('');
+
+  const uploadFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    return response.json();
+  };
+
+  const { refetch: upload } = useQuery('upload', () => file && uploadFile(file), {
+    enabled: false,
+    onSuccess: () => console.log('File uploaded'),
+    onError: (err) => alert(`Error: ${err}`),
+  });
+
+  useEffect(() => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        setPreview(marked.parse(content));
+        upload();
+      };
+      reader.readAsText(file);
+    }
+  }, [file, upload]);
+
+  const downloadFile = (format: 'pdf' | 'docx') => {
+    if (!file) {
+      alert('Please upload a file first!');
+      return;
+    }
+    window.location.href = `/api/download/${format}`;
+  };
+
+  return (
+    <motion.div
+      className="min-h-screen flex flex-col"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <header className="bg-gray-800 text-white p-4 text-center">
+        <h1 className="text-2xl font-bold">Markdown to PDF/Word Converter</h1>
+      </header>
+      <div className="flex flex-1 max-w-7xl mx-auto p-4 gap-4">
+        <main className="flex-3 bg-white p-4 rounded shadow">
+          <h2 className="text-xl font-semibold mb-4">Upload Your Markdown File</h2>
+          <input
+            type="file"
+            accept=".md,.markdown"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            className="mb-4"
+          />
+          <h3 className="text-lg font-semibold">Preview</h3>
+          <div
+            className="border p-4 min-h-[200px] overflow-y-auto"
+            dangerouslySetInnerHTML={{ __html: preview }}
+          />
+          <div className="mt-4">
+            <Button onClick={() => downloadFile('pdf')} className="mr-2">
+              Download as PDF
+            </Button>
+            <Button onClick={() => downloadFile('docx')}>
+              Download as Word
+            </Button>
+          </div>
+        </main>
+        <aside className="flex-1 flex flex-col gap-4">
+          <AdBanner />
+          <AdBanner />
+        </aside>
+      </div>
+      <footer className="bg-gray-800 text-white p-4 text-center">
+        <p>© 2025 Markdown Converter. All rights reserved.</p>
+      </footer>
+    </motion.div>
+  );
+};
+
+export default Home;
+EOF
+
+cat > client/src/components/AdBanner.tsx << 'EOF'
+import { motion } from 'framer-motion';
+
+const AdBanner = () => (
+  <motion.div
+    className="bg-gray-200 p-4 text-center rounded"
+    initial={{ scale: 0.9 }}
+    animate={{ scale: 1 }}
+    transition={{ duration: 0.3 }}
+  >
+    <img
+      src="https://via.placeholder.com/300x250?text=Ad+Space"
+      alt="Ad Banner"
+      className="max-w-full h-auto"
+    />
+  </motion.div>
+);
+
+export default AdBanner;
+EOF
+
+cat > client/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markdown to PDF/Word Converter</title>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
+EOF
+
+cat > client/tsconfig.json << 'EOF'
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+EOF
+
+cat > client/tsconfig.node.json << 'EOF'
+{
+  "compilerOptions": {
+    "composite": true,
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+EOF
+
+cat > client/postcss.config.js << 'EOF'
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+EOF
+
+# Create server files
+cat > server/package.json << 'EOF'
+{
+  "name": "markdown-converter-server",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "nodemon src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "migrate": "drizzle-kit push:pg"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "drizzle-orm": "^0.28.0",
+    "pg": "^8.11.0",
+    "ws": "^8.13.0",
+    "express-session": "^1.17.3",
+    "connect-pg-simple": "^9.0.0",
+    "passport": "^0.6.0",
+    "passport-jwt": "^4.0.0",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "jsonwebtoken": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "@types/pg": "^8.10.0",
+    "@types/ws": "^8.5.5",
+    "@types/passport-jwt": "^3.0.8",
+    "@types/multer": "^1.4.7",
+    "@types/cors": "^2.8.13",
+    "@types/jsonwebtoken": "^9.0.2",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.1",
+    "nodemon": "^3.0.0",
+    "drizzle-kit": "^0.19.0"
+  }
+}
+EOF
+
+cat > server/src/server.ts << 'EOF'
+import express from 'express';
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import cors from 'cors';
+import passport from 'passport';
+import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
+import fileRoutes from './routes/fileRoutes';
+import authRoutes from './routes/authRoutes';
+import { drizzle } from 'drizzle-orm/pg-core';
+import { Pool } from 'pg';
+import { initWebSocket } from './ws';
+
+const app = express();
+const port = process.env.PORT || 8080;
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const db = drizzle(pool);
+
+const PgSession = connectPgSimple(session);
+app.use(
+  session({
+    store: new PgSession({
+      pool,
+      tableName: 'session',
+    }),
+    secret: process.env.SESSION_SECRET || 'secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }, // 30 days
+  })
+);
+
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+app.use(express.json());
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.use(
+  new JwtStrategy(
+    {
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: process.env.JWT_SECRET || 'secret',
+    },
+    (payload, done) => done(null, payload)
+  )
+);
+
+app.use('/api', fileRoutes);
+app.use('/api/auth', authRoutes);
+
+// Serve frontend
+app.use(express.static('../client/dist'));
+
+// WebSocket setup
+const server = app.listen(port, () => console.log(`Server running on port ${port}`));
+initWebSocket(server, db);
+
+export { db };
+EOF
+
+cat > server/src/routes/fileRoutes.ts << 'EOF'
+import express from 'express';
+import multer from 'multer';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { db } from '../server';
+import { files } from '../db/schema';
+import { eq } from 'drizzle-orm';
+
+const router = express.Router();
+const upload = multer({ dest: 'uploads/' });
+const execPromise = promisify(exec);
+
+router.post('/upload', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
+  if (!req.file.originalname.match(/\.(md|markdown)$/)) {
+    return res.status(400).json({ success: false, error: 'Invalid file format' });
+  }
+
+  await db.insert(files).values({ filename: req.file.filename });
+  res.json({ success: true });
+});
+
+router.get('/download/:format', async (req, res) => {
+  const { format } = req.params;
+  const [file] = await db.select().from(files).limit(1).orderBy(files.id.desc());
+  if (!file) return res.status(400).send('No file uploaded');
+
+  const filePath = `uploads/${file.filename}`;
+  try {
+    if (format === 'pdf') {
+      await execPromise(
+        `python3 -c "import markdown; from weasyprint import HTML; with open('${filePath}', 'r') as f: md = f.read(); html = markdown.markdown(md); HTML(string=html).write_pdf('output.pdf')"`
+      );
+      res.download('output.pdf', 'converted.pdf');
+    } else if (format === 'docx') {
+      await execPromise(
+        `python3 -c "from docx import Document; doc = Document(); with open('${filePath}', 'r') as f: doc.add_paragraph(f.read()); doc.save('output.docx')"`
+      );
+      res.download('output.docx', 'converted.docx');
+    } else {
+      res.status(400).send('Invalid format');
+    }
+  } catch (err) {
+    res.status(500).send(`Error: ${err}`);
+  }
+});
+
+export default router;
+EOF
+
+cat > server/src/routes/authRoutes.ts << 'EOF'
+import express from 'express';
+import jwt from 'jsonwebtoken';
+
+const router = express.Router();
+
+router.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === 'user' && password === 'pass') { // Demo credentials
+    const token = jwt.sign({ username }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
+    res.json({ token });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+export default router;
+EOF
+
+cat > server/src/ws.ts << 'EOF'
+import { Server } from 'ws';
+import { Drizzle } from 'drizzle-orm/pg-core';
+
+export function initWebSocket(server: any, db: Drizzle) {
+  const wss = new Server({ server });
+
+  wss.on('connection', (ws) => {
+    ws.on('message', (message) => {
+      ws.send(`Processing: ${message}`);
+    });
+  });
+}
+EOF
+
+cat > server/src/db/schema.ts << 'EOF'
+import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+
+export const files = pgTable('files', {
+  id: serial('id').primaryKey(),
+  filename: text('filename').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const sessions = pgTable('session', {
+  sid: text('sid').primaryKey(),
+  sess: text('sess').notNull(),
+  expire: timestamp('expire').notNull(),
+});
+EOF
+
+cat > server/src/drizzle.config.ts << 'EOF'
+import { defineConfig } from 'drizzle-kit';
+
+export default defineConfig({
+  schema: './src/db/schema.ts',
+  out: './src/db/migrations',
+  driver: 'pg',
+  dbCredentials: {
+    connectionString: process.env.DATABASE_URL || '',
+  },
+});
+EOF
+
+cat > server/tsconfig.json << 'EOF'
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"]
+}
+EOF
+
+# Create root files
+cat > package.json << 'EOF'
+{
+  "name": "markdown-converter",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"cd client && npm run dev\" \"cd server && npm run dev\"",
+    "build": "cd client && npm run build && cd ../server && npm run build",
+    "start": "cd server && npm run start",
+    "migrate": "cd server && npm run migrate"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
+EOF
+
+cat > .replit << 'EOF'
+run = "npm run dev"
+EOF
+
+cat > replit.nix << 'EOF'
+{ pkgs }: {
+  deps = [
+    pkgs.nodejs_20
+    pkgs.python3
+    pkgs.python3Packages.pip
+    pkgs.libpango
+    pkgs.libpango.dev
+  ];
+}
+EOF
+
+cat > .env << 'EOF'
+DATABASE_URL=postgresql://user:password@localhost:5432/markdown_converter
+JWT_SECRET=your_jwt_secret_key
+SESSION_SECRET=your_session_secret_key
+PORT=8080
+EOF
+
+# Install dependencies
+echo "Installing client dependencies..."
+cd client && npm install
+cd ..
+
+echo "Installing server dependencies..."
+cd server && npm install
+cd ..
+
+echo "Installing root dependencies..."
+npm install
+
+echo "Installing Python dependencies..."
+pip install weasyprint python-docx markdown
+
+echo "Installing system dependencies for weasyprint..."
+apt-get update && apt-get install -y libpango-1.0-0 libpangoft2-1.0-0
+
+# Create uploads directory
+mkdir -p uploads
+
+echo "Setup complete! Please update .env with your PostgreSQL connection string."
+echo "Run 'npm run dev' to start the app, and 'npm run migrate' to set up the database."

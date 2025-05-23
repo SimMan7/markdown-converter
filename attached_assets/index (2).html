@@ -1,0 +1,194 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown to PDF/Word Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container {
+            display: flex;
+            flex: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            gap: 20px;
+        }
+        .main-content {
+            flex: 3;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .sidebar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .ad-space {
+            background: #e0e0e0;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        .ad-space img {
+            max-width: 100%;
+            height: auto;
+        }
+        .preview {
+            border: 1px solid #ddd;
+            padding: 10px;
+            min-height: 200px;
+            margin-top: 10px;
+            overflow-y: auto;
+        }
+        .header {
+            background: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        .footer {
+            background: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            margin-top: auto;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Markdown to PDF/Word Converter</h1>
+    </div>
+    <div class="container">
+        <div class="main-content">
+            <h2>Upload Your Markdown File</h2>
+            <input type="file" id="markdownFile" accept=".md,.markdown">
+            <h3>Preview</h3>
+            <div id="preview" class="preview"></div>
+            <button onclick="downloadFile('pdf')">Download as PDF</button>
+            <button onclick="downloadFile('docx')">Download as Word</button>
+        </div>
+        <div class="sidebar">
+            <div class="ad-space">
+                <!-- Placeholder for ad (300x250px) -->
+                <img src="https://via.placeholder.com/300x250?text=Ad+Space+1" alt="Ad 1">
+            </div>
+            <div class="ad-space">
+                <!-- Placeholder for ad (300x250px) -->
+                <img src="https://via.placeholder.com/300x250?text=Ad+Space+2" alt="Ad 2">
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        <p>&copy; 2025 Markdown Converter. All rights reserved.</p>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.getElementById('markdownFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    document.getElementById('preview').innerHTML = marked.parse(content);
+                    uploadFile(file);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('File uploaded successfully');
+                } else {
+                    alert('Error uploading file: ' + data.error);
+                }
+            })
+            .catch(error => alert('Error: ' + error));
+        }
+
+        function downloadFile(format) {
+            const fileInput = document.getElementById('markdownFile');
+            if (!fileInput.files[0]) {
+                alert('Please upload a file first!');
+                return;
+            }
+            window.location.href = `/download/${format}`;
+        }
+    </script>
+</body>
+</html>
