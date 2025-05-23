@@ -27,6 +27,23 @@
 
     <!-- Main Content -->
     <main class="container my-4">
+        <!-- Top Banner Advertisement -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="card ad-space banner-ad">
+                    <div class="card-body text-center p-3">
+                        <div class="ad-placeholder" style="min-height: 90px; background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                            <i class="fas fa-rectangle-ad fa-lg me-3 opacity-75"></i>
+                            <div>
+                                <h6 class="mb-0">Banner Advertisement Space</h6>
+                                <small class="opacity-75">728x90 Leaderboard</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -127,6 +144,17 @@
 
             <!-- Sidebar -->
             <div class="col-lg-4">
+                <!-- Advertisement Space 1 -->
+                <div class="card mb-4 ad-space">
+                    <div class="card-body text-center p-3">
+                        <div class="ad-placeholder" style="min-height: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; flex-direction: column;">
+                            <i class="fas fa-ad fa-2x mb-2 opacity-75"></i>
+                            <h6 class="mb-1">Advertisement</h6>
+                            <small class="opacity-75">300x250</small>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Features Card -->
                 <div class="card mb-4">
                     <div class="card-header">
@@ -162,6 +190,17 @@
                                 Mobile-friendly interface
                             </li>
                         </ul>
+                    </div>
+                </div>
+
+                <!-- Advertisement Space 2 -->
+                <div class="card mb-4 ad-space">
+                    <div class="card-body text-center p-3">
+                        <div class="ad-placeholder" style="min-height: 250px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; flex-direction: column;">
+                            <i class="fas fa-bullhorn fa-2x mb-2 opacity-75"></i>
+                            <h6 class="mb-1">Advertisement</h6>
+                            <small class="opacity-75">300x250</small>
+                        </div>
                     </div>
                 </div>
 
