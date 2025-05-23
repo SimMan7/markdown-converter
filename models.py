@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import func
 
 
@@ -126,4 +126,58 @@ class SiteVisit(db.Model):
             'total_visits': total_visits,
             'recent_visits': recent_visits,
             'unique_visitors': unique_visitors
+        }
+
+
+class ContactSubmission(db.Model):
+    """Track contact form submissions for rate limiting and spam prevention"""
+    __tablename__ = 'contact_submissions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ip_address = db.Column(db.String(45), nullable=False)
+    email = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    company = db.Column(db.String(255))
+    ad_location = db.Column(db.String(100))
+    message = db.Column(db.Text, nullable=False)
+    submission_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    email_sent = db.Column(db.Boolean, default=False)
+    user_agent = db.Column(db.Text)
+    
+    def __repr__(self):
+        return f'<ContactSubmission {self.email} at {self.submission_time}>'
+    
+    @classmethod
+    def can_submit(cls, ip_address, email):
+        """Check if IP/email can submit (2 minute rate limit)"""
+        two_minutes_ago = datetime.utcnow() - timedelta(minutes=2)
+        
+        # Check IP rate limit
+        recent_ip_submission = cls.query.filter(
+            cls.ip_address == ip_address,
+            cls.submission_time >= two_minutes_ago
+        ).first()
+        
+        # Check email rate limit
+        recent_email_submission = cls.query.filter(
+            cls.email == email,
+            cls.submission_time >= two_minutes_ago
+        ).first()
+        
+        return recent_ip_submission is None and recent_email_submission is None
+    
+    @classmethod
+    def get_submission_stats(cls):
+        """Get contact form submission statistics"""
+        total_submissions = cls.query.count()
+        successful_emails = cls.query.filter(cls.email_sent == True).count()
+        
+        # Recent submissions (last 24 hours)
+        yesterday = datetime.utcnow() - timedelta(days=1)
+        recent_submissions = cls.query.filter(cls.submission_time >= yesterday).count()
+        
+        return {
+            'total_submissions': total_submissions,
+            'successful_emails': successful_emails,
+            'recent_submissions': recent_submissions
         }

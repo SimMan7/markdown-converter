@@ -9,12 +9,28 @@ import io
 import tempfile
 import uuid
 from datetime import datetime
+from email_service import send_advertiser_contact_email, send_confirmation_email
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
+class Base(DeclarativeBase):
+    pass
+
+db = SQLAlchemy(model_class=Base)
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
+
+# Database configuration
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+}
+db.init_app(app)
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
@@ -253,6 +269,87 @@ def not_found(e):
 def server_error(e):
     flash('An internal server error occurred. Please try again.', 'error')
     return redirect(url_for('index'))
+
+# Initialize database tables
+with app.app_context():
+    import models
+    db.create_all()
+
+@app.route('/contact-advertiser', methods=['GET', 'POST'])
+def contact_advertiser():
+    """Handle advertiser contact form"""
+    if request.method == 'GET':
+        # Get the ad location from query parameter
+        ad_location = request.args.get('location', 'General Inquiry')
+        return render_template('contact_form.html', ad_location=ad_location)
+    
+    try:
+        # Get form data
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        company = request.form.get('company', '').strip()
+        message = request.form.get('message', '').strip()
+        ad_location = request.form.get('ad_location', 'General Inquiry')
+        
+        # Basic validation
+        if not all([name, email, message]):
+            flash('Please fill in all required fields.', 'error')
+            return render_template('contact_form.html', 
+                                 name=name, email=email, company=company, 
+                                 message=message, ad_location=ad_location)
+        
+        # Email validation
+        if '@' not in email or '.' not in email:
+            flash('Please enter a valid email address.', 'error')
+            return render_template('contact_form.html',
+                                 name=name, email=email, company=company,
+                                 message=message, ad_location=ad_location)
+        
+        # Get user IP and user agent
+        user_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', ''))
+        user_agent = request.headers.get('User-Agent', '')
+        
+        # Rate limiting check
+        from models import ContactSubmission
+        if not ContactSubmission.can_submit(user_ip, email):
+            flash('Please wait 2 minutes before submitting another inquiry.', 'warning')
+            return render_template('contact_form.html',
+                                 name=name, email=email, company=company,
+                                 message=message, ad_location=ad_location)
+        
+        # Send email
+        success, error_msg = send_advertiser_contact_email(name, email, company, message, ad_location)
+        
+        # Save to database
+        submission = ContactSubmission(
+            ip_address=user_ip,
+            email=email,
+            name=name,
+            company=company,
+            ad_location=ad_location,
+            message=message,
+            email_sent=success,
+            user_agent=user_agent
+        )
+        
+        db.session.add(submission)
+        db.session.commit()
+        
+        if success:
+            # Send confirmation email to user
+            send_confirmation_email(email, name)
+            flash('Thank you for your inquiry! We\'ll get back to you within 24 hours.', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash(f'Sorry, there was an issue sending your message: {error_msg}', 'error')
+            return render_template('contact_form.html',
+                                 name=name, email=email, company=company,
+                                 message=message, ad_location=ad_location)
+            
+    except Exception as e:
+        logging.error(f"Contact form error: {e}")
+        flash('An unexpected error occurred. Please try again later.', 'error')
+        return render_template('contact_form.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

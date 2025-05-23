@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advertise with MarkdownConverter</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="bg-dark border-bottom">
+        <div class="container py-3">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-file-alt text-primary me-2"></i>
+                        <a href="{{ url_for('index') }}" class="text-decoration-none text-light">MarkdownConverter</a>
+                    </h1>
+                    <p class="text-muted mb-0 small">Advertise with us - Reach our engaged audience</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container my-4">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="row mb-4">
+                    <div class="col">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{% if category == 'error' %}danger{% else %}{{ category }}{% endif %} alert-dismissible fade show" role="alert">
+                                <i class="fas fa-{% if category == 'error' %}exclamation-triangle{% elif category == 'success' %}check-circle{% else %}info-circle{% endif %} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <!-- Contact Form -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-bullhorn text-primary me-2"></i>
+                            Advertise with MarkdownConverter
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-4">
+                            Interested in advertising on MarkdownConverter? We'd love to hear from you! 
+                            Fill out the form below and we'll get back to you within 24 hours with pricing and placement options.
+                        </p>
+
+                        <form method="POST" id="contactForm" novalidate>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="name" class="form-label">
+                                        Full Name <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           value="{{ name or '' }}" required maxlength="255">
+                                    <div class="invalid-feedback">
+                                        Please provide your full name.
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">
+                                        Email Address <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           value="{{ email or '' }}" required maxlength="255">
+                                    <div class="invalid-feedback">
+                                        Please provide a valid email address.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="company" class="form-label">Company Name</label>
+                                    <input type="text" class="form-control" id="company" name="company" 
+                                           value="{{ company or '' }}" maxlength="255">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="ad_location" class="form-label">Advertisement Interest</label>
+                                    <select class="form-select" id="ad_location" name="ad_location">
+                                        <option value="Banner Ad" {% if ad_location == 'Banner Ad' %}selected{% endif %}>
+                                            Top Banner (728x90)
+                                        </option>
+                                        <option value="Sidebar Ad" {% if ad_location == 'Sidebar Ad' %}selected{% endif %}>
+                                            Sidebar (300x250)
+                                        </option>
+                                        <option value="All Locations" {% if ad_location == 'All Locations' %}selected{% endif %}>
+                                            All Advertisement Locations
+                                        </option>
+                                        <option value="Custom" {% if ad_location == 'Custom' %}selected{% endif %}>
+                                            Custom Placement
+                                        </option>
+                                        <option value="General Inquiry" {% if ad_location == 'General Inquiry' %}selected{% endif %}>
+                                            General Inquiry
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="message" class="form-label">
+                                    Message <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" id="message" name="message" rows="5" 
+                                          required maxlength="2000" placeholder="Tell us about your advertising goals, budget, timeline, or any specific questions you have...">{{ message or '' }}</textarea>
+                                <div class="form-text">Maximum 2000 characters</div>
+                                <div class="invalid-feedback">
+                                    Please provide details about your advertising needs.
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-shield-alt me-1"></i>
+                                    Your information is secure and will only be used to contact you about advertising opportunities.
+                                </small>
+                                <div>
+                                    <a href="{{ url_for('index') }}" class="btn btn-secondary me-2">
+                                        <i class="fas fa-arrow-left me-1"></i>
+                                        Back to Converter
+                                    </a>
+                                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                                        <i class="fas fa-paper-plane me-2"></i>
+                                        Send Inquiry
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Advertising Info -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Why Advertise Here?
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <i class="fas fa-users text-success me-2"></i>
+                                Engaged developer audience
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-globe text-success me-2"></i>
+                                Global reach and visibility
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-mobile-alt text-success me-2"></i>
+                                Mobile-responsive ads
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-analytics text-success me-2"></i>
+                                Performance tracking
+                            </li>
+                            <li class="mb-0">
+                                <i class="fas fa-handshake text-success me-2"></i>
+                                Competitive pricing
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Ad Formats -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-rectangle-ad me-2"></i>
+                            Available Formats
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Banner Ads</strong>
+                            <div class="text-muted small">728x90 pixels - Top placement</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Sidebar Ads</strong>
+                            <div class="text-muted small">300x250 pixels - High visibility</div>
+                        </div>
+                        <div class="mb-0">
+                            <strong>Custom Placements</strong>
+                            <div class="text-muted small">Contact us for custom sizes</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-envelope me-2"></i>
+                            Direct Contact
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">
+                            <strong>Email:</strong><br>
+                            <a href="mailto:simon@alpharock.net" class="text-decoration-none">
+                                simon@alpharock.net
+                            </a>
+                        </p>
+                        <p class="mb-0 text-muted small">
+                            Response time: Within 24 hours
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark border-top mt-5">
+        <div class="container py-3">
+            <div class="text-center text-muted">
+                <p class="mb-0">&copy; 2025 MarkdownConverter. Built with Flask & Bootstrap.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Form validation and submission handling
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            const form = e.target;
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (!form.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+            } else {
+                // Show loading state
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+                submitBtn.disabled = true;
+            }
+            
+            form.classList.add('was-validated');
+        });
+
+        // Character counter for message
+        const messageField = document.getElementById('message');
+        const maxLength = 2000;
+        
+        messageField.addEventListener('input', function() {
+            const remaining = maxLength - this.value.length;
+            const formText = this.parentNode.querySelector('.form-text');
+            
+            if (remaining < 100) {
+                formText.textContent = `${remaining} characters remaining`;
+                formText.className = remaining < 0 ? 'form-text text-danger' : 'form-text text-warning';
+            } else {
+                formText.textContent = 'Maximum 2000 characters';
+                formText.className = 'form-text';
+            }
+        });
+    </script>
+</body>
+</html>
