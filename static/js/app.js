@@ -70,10 +70,15 @@ function initFileUpload() {
                 // Show file info
                 const fileInfo = document.createElement('div');
                 fileInfo.className = 'small text-muted mt-2';
-                fileInfo.innerHTML = `
-                    <i class="fas fa-file-alt me-1"></i>
-                    Selected: ${file.name} (${formatFileSize(file.size)})
-                `;
+                
+                // Safe DOM manipulation to prevent XSS
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-file-alt me-1';
+                
+                const textNode = document.createTextNode(`Selected: ${file.name} (${formatFileSize(file.size)})`);
+                
+                fileInfo.appendChild(icon);
+                fileInfo.appendChild(textNode);
                 
                 // Remove any existing file info
                 const existingInfo = fileInput.parentNode.querySelector('.file-info');
