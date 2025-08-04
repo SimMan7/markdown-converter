@@ -91,7 +91,7 @@ def upload_file():
         
         # Generate unique filename to avoid conflicts
         unique_id = str(uuid.uuid4())
-        filename = f"{unique_id}_{secure_filename(file.filename)}"
+        filename = f"{unique_id}_{secure_filename(file.filename or 'upload')}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         
         file.save(filepath)
@@ -321,16 +321,15 @@ def contact_advertiser():
         success, error_msg = send_advertiser_contact_email(name, email, company, message, ad_location)
         
         # Save to database
-        submission = ContactSubmission(
-            ip_address=user_ip,
-            email=email,
-            name=name,
-            company=company,
-            ad_location=ad_location,
-            message=message,
-            email_sent=success,
-            user_agent=user_agent
-        )
+        submission = ContactSubmission()
+        submission.ip_address = user_ip
+        submission.email = email
+        submission.name = name
+        submission.company = company
+        submission.ad_location = ad_location
+        submission.message = message
+        submission.email_sent = success
+        submission.user_agent = user_agent
         
         db.session.add(submission)
         db.session.commit()
