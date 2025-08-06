@@ -17,45 +17,6 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
 
-# Database configuration for Vercel (using PostgreSQL)
-database_url = os.environ.get("DATABASE_URL")
-if database_url and database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
-
-# Fallback to SQLite if no database URL is provided
-if not database_url:
-    database_url = "sqlite:///app.db"
-
-# Only import SQLAlchemy if database is configured
-try:
-    from flask_sqlalchemy import SQLAlchemy
-    from sqlalchemy.orm import DeclarativeBase
-    
-    class Base(DeclarativeBase):
-        pass
-
-    db = SQLAlchemy(model_class=Base)
-    
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
-    }
-    db.init_app(app)
-    
-    # Initialize database tables with error handling
-    try:
-        with app.app_context():
-            import models
-            db.create_all()
-    except Exception as e:
-        logging.error(f"Database initialization error: {e}")
-        # Continue without database if it fails
-        db = None
-except Exception as e:
-    logging.error(f"SQLAlchemy import error: {e}")
-    db = None
-
 # Configuration
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'md', 'markdown'}
@@ -335,57 +296,23 @@ def contact_advertiser():
         user_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', ''))
         user_agent = request.headers.get('User-Agent', '')
         
-        # Try to save to database, but don't fail if it doesn't work
+        # Try to send email, but don't fail if it doesn't work
         try:
-            if db is not None:
-                from models import ContactSubmission
-                if not ContactSubmission.can_submit(user_ip, email):
-                    flash('Please wait 2 minutes before submitting another inquiry.', 'warning')
-                    return render_template('contact_form.html',
-                                         name=name, email=email, company=company,
-                                         message=message, ad_location=ad_location)
-                
-                # Send email
-                success, error_msg = send_advertiser_contact_email(name, email, company, message, ad_location)
-                
-                # Save to database
-                submission = ContactSubmission()
-                submission.ip_address = user_ip
-                submission.email = email
-                submission.name = name
-                submission.company = company
-                submission.ad_location = ad_location
-                submission.message = message
-                submission.email_sent = success
-                submission.user_agent = user_agent
-                
-                db.session.add(submission)
-                db.session.commit()
-                
-                if success:
-                    # Send confirmation email to user
-                    send_confirmation_email(email, name)
-                    flash('Thank you for your inquiry! We\'ll get back to you within 24 hours.', 'success')
-                    return redirect(url_for('index'))
-                else:
-                    flash(f'Sorry, there was an issue sending your message: {error_msg}', 'error')
-                    return render_template('contact_form.html',
-                                         name=name, email=email, company=company,
-                                         message=message, ad_location=ad_location)
+            # Send email
+            success, error_msg = send_advertiser_contact_email(name, email, company, message, ad_location)
+            
+            if success:
+                # Send confirmation email to user
+                send_confirmation_email(email, name)
+                flash('Thank you for your inquiry! We\'ll get back to you within 24 hours.', 'success')
+                return redirect(url_for('index'))
             else:
-                # No database available, just send email
-                success, error_msg = send_advertiser_contact_email(name, email, company, message, ad_location)
-                if success:
-                    send_confirmation_email(email, name)
-                    flash('Thank you for your inquiry! We\'ll get back to you within 24 hours.', 'success')
-                    return redirect(url_for('index'))
-                else:
-                    flash(f'Sorry, there was an issue sending your message: {error_msg}', 'error')
-                    return render_template('contact_form.html',
-                                         name=name, email=email, company=company,
-                                         message=message, ad_location=ad_location)
+                flash(f'Sorry, there was an issue sending your message: {error_msg}', 'error')
+                return render_template('contact_form.html',
+                                     name=name, email=email, company=company,
+                                     message=message, ad_location=ad_location)
         except Exception as e:
-            logging.error(f"Database/email error: {e}")
+            logging.error(f"Email error: {e}")
             flash('Thank you for your inquiry! We\'ll get back to you within 24 hours.', 'success')
             return redirect(url_for('index'))
             
