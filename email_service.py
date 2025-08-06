@@ -1,7 +1,6 @@
 import os
 import sys
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Email, To, Content
+import requests
 import logging
 
 # Configure logging
@@ -9,16 +8,14 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def send_advertiser_contact_email(name, email, company, message, ad_location):
-    """Send email notification when someone submits the advertiser contact form"""
+    """Send email notification when someone submits the advertiser contact form using Resend"""
     
-    sendgrid_key = os.environ.get('SENDGRID_API_KEY')
-    if not sendgrid_key:
-        logger.error('SENDGRID_API_KEY environment variable is not set')
+    resend_api_key = os.environ.get('RESEND_API_KEY')
+    if not resend_api_key:
+        logger.error('RESEND_API_KEY environment variable is not set')
         return False, 'Email service not configured'
     
     try:
-        sg = SendGridAPIClient(sendgrid_key)
-        
         # Email content
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -63,34 +60,46 @@ def send_advertiser_contact_email(name, email, company, message, ad_location):
         This email was sent from the MarkdownConverter website contact form.
         """
         
-        message = Mail(
-            from_email=Email("noreply@markdownconverter.com", "MarkdownConverter"),
-            to_emails=To("simon@alpharock.net"),
-            subject=f"New Advertising Inquiry from {name} - {company}",
-            html_content=html_content,
-            plain_text_content=text_content
+        # Resend API call
+        headers = {
+            'Authorization': f'Bearer {resend_api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        data = {
+            'from': 'MarkdownConverter <noreply@markdownconverter.com>',
+            'to': ['simon@alpharock.net'],
+            'subject': f'New Advertising Inquiry from {name} - {company}',
+            'html': html_content,
+            'text': text_content
+        }
+        
+        response = requests.post(
+            'https://api.resend.com/emails',
+            headers=headers,
+            json=data
         )
         
-        # Send the email
-        response = sg.send(message)
-        logger.info(f"Email sent successfully. Status code: {response.status_code}")
-        return True, 'Email sent successfully'
+        if response.status_code == 200:
+            logger.info(f"Email sent successfully via Resend. Response: {response.json()}")
+            return True, 'Email sent successfully'
+        else:
+            logger.error(f"Resend API error: {response.status_code} - {response.text}")
+            return False, f'Failed to send email: {response.text}'
         
     except Exception as e:
-        logger.error(f"SendGrid error: {str(e)}")
+        logger.error(f"Resend error: {str(e)}")
         return False, f'Failed to send email: {str(e)}'
 
 
 def send_confirmation_email(user_email, name):
-    """Send confirmation email to the user who submitted the form"""
+    """Send confirmation email to the user who submitted the form using Resend"""
     
-    sendgrid_key = os.environ.get('SENDGRID_API_KEY')
-    if not sendgrid_key:
+    resend_api_key = os.environ.get('RESEND_API_KEY')
+    if not resend_api_key:
         return False, 'Email service not configured'
     
     try:
-        sg = SendGridAPIClient(sendgrid_key)
-        
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #007bff;">Thank you for your interest in advertising!</h2>
@@ -118,16 +127,31 @@ def send_confirmation_email(user_email, name):
         </div>
         """
         
-        message = Mail(
-            from_email=Email("noreply@markdownconverter.com", "MarkdownConverter"),
-            to_emails=To(user_email),
-            subject="Thank you for your advertising inquiry - MarkdownConverter",
-            html_content=html_content
+        # Resend API call
+        headers = {
+            'Authorization': f'Bearer {resend_api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        data = {
+            'from': 'MarkdownConverter <noreply@markdownconverter.com>',
+            'to': [user_email],
+            'subject': 'Thank you for your advertising inquiry - MarkdownConverter',
+            'html': html_content
+        }
+        
+        response = requests.post(
+            'https://api.resend.com/emails',
+            headers=headers,
+            json=data
         )
         
-        response = sg.send(message)
-        logger.info(f"Confirmation email sent to {user_email}")
-        return True, 'Confirmation sent'
+        if response.status_code == 200:
+            logger.info(f"Confirmation email sent to {user_email} via Resend")
+            return True, 'Confirmation sent'
+        else:
+            logger.error(f"Failed to send confirmation email: {response.status_code} - {response.text}")
+            return False, 'Failed to send confirmation'
         
     except Exception as e:
         logger.error(f"Failed to send confirmation email: {str(e)}")
