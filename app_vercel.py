@@ -191,6 +191,19 @@ def index():
     """Main page"""
     return render_template('index.html')
 
+@app.route('/ads.txt')
+def ads_txt():
+    """Serve ads.txt file for Google AdSense"""
+    try:
+        return Response(
+            "google.com, ca-pub-6865885814212781, DIRECT, f08c47fec0942fa0",
+            mimetype='text/plain',
+            headers={'Cache-Control': 'public, max-age=3600'}
+        )
+    except Exception as e:
+        logging.error(f"Error serving ads.txt: {e}")
+        return Response("google.com, ca-pub-6865885814212781, DIRECT, f08c47fec0942fa0", mimetype='text/plain')
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     """Handle file upload"""
