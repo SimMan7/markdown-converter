@@ -1,7 +1,9 @@
 import os
 import logging
 import markdown
-from flask import Flask, request, render_template, send_file, flash, redirect, url_for, Response
+import requests
+import json
+from flask import Flask, request, render_template, send_file, flash, redirect, url_for, Response, jsonify
 from werkzeug.utils import secure_filename
 from docx import Document
 import io
@@ -33,6 +35,10 @@ except Exception as e:
 # In-memory storage for Vercel (since filesystem is read-only)
 file_storage = {}
 
+# reCAPTCHA configuration
+RECAPTCHA_SECRET_KEY = "6LeSYJ0rAAAAABx3xOqWudqBdr36gK6IcTUnBgaK"
+RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
+
 def allowed_file(filename):
     """Check if file has allowed extension"""
     return '.' in filename and \
@@ -53,6 +59,24 @@ def cleanup_old_files():
                     logging.info(f"Removed old file: {filename}")
     except Exception as e:
         logging.error(f"Error cleaning up files: {e}")
+
+def verify_recaptcha(recaptcha_response):
+    """Verify reCAPTCHA response with Google's API"""
+    try:
+        data = {
+            'secret': RECAPTCHA_SECRET_KEY,
+            'response': recaptcha_response
+        }
+        
+        response = requests.post(RECAPTCHA_VERIFY_URL, data=data, timeout=10)
+        result = response.json()
+        
+        logging.info(f"reCAPTCHA verification result: {result}")
+        
+        return result.get('success', False)
+    except Exception as e:
+        logging.error(f"Error verifying reCAPTCHA: {e}")
+        return False
 
 @app.route('/')
 def index():
@@ -310,6 +334,64 @@ def download_file(format, filename):
         logging.error(f"Download error: {e}")
         flash(f'Error converting file: {str(e)}', 'error')
         return redirect(url_for('index'))
+
+@app.route('/api/send-ad-inquiry', methods=['POST'])
+def send_ad_inquiry():
+    """Handle advertiser contact form submissions with reCAPTCHA verification"""
+    try:
+        # Get JSON data from request
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'success': False, 'message': 'No data received'}), 400
+        
+        # Extract form fields
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip()
+        company = data.get('company', '').strip()
+        message = data.get('message', '').strip()
+        recaptcha_response = data.get('g-recaptcha-response', '')
+        
+        # Validate required fields
+        if not name or not email or not message:
+            return jsonify({'success': False, 'message': 'Please fill in all required fields'}), 400
+        
+        # Validate email format
+        if '@' not in email or '.' not in email:
+            return jsonify({'success': False, 'message': 'Please enter a valid email address'}), 400
+        
+        # Verify reCAPTCHA
+        if not recaptcha_response:
+            return jsonify({'success': False, 'message': 'Please complete the reCAPTCHA'}), 400
+        
+        if not verify_recaptcha(recaptcha_response):
+            return jsonify({'success': False, 'message': 'reCAPTCHA verification failed. Please try again.'}), 400
+        
+        # Log the inquiry (in production, you'd send an email or store in database)
+        inquiry_data = {
+            'name': name,
+            'email': email,
+            'company': company,
+            'message': message,
+            'timestamp': datetime.now().isoformat(),
+            'ip_address': request.remote_addr
+        }
+        
+        logging.info(f"New ad inquiry received: {inquiry_data}")
+        
+        # In production, you would:
+        # 1. Send email notification to admin
+        # 2. Store in database
+        # 3. Send confirmation email to user
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Thank you! Your inquiry has been received. We will contact you soon.'
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"Error processing ad inquiry: {e}")
+        return jsonify({'success': False, 'message': 'An error occurred. Please try again.'}), 500
 
 @app.errorhandler(413)
 def too_large(e):
