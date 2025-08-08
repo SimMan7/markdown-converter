@@ -219,16 +219,150 @@
             margin-bottom: 1rem;
         }
         
+        /* Blog Section */
+        .blog-section {
+            margin: 4rem 0;
+        }
+        
+        .blog-section h2 {
+            text-align: center;
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        .blog-intro {
+            text-align: center;
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 3rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .blog-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .blog-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .blog-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .blog-date {
+            color: #666;
+        }
+        
+        .blog-category {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .blog-card h3 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        .blog-card h3 a {
+            color: #2c3e50;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .blog-card h3 a:hover {
+            color: #667eea;
+        }
+        
+        .blog-card p {
+            color: #666;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        .read-more {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        
+        .read-more:hover {
+            color: #764ba2;
+        }
+        
+        .blog-cta {
+            text-align: center;
+        }
+        
         /* Footer */
         footer {
             background: #2c3e50;
             color: white;
-            text-align: center;
-            padding: 2rem 0;
+            padding: 3rem 0 2rem;
             margin-top: 3rem;
         }
         
-        footer p {
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .footer-section h4 {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            color: #ecf0f1;
+        }
+        
+        .footer-section ul {
+            list-style: none;
+        }
+        
+        .footer-section ul li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .footer-section ul li a {
+            color: #bdc3c7;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-section ul li a:hover {
+            color: #ecf0f1;
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid #34495e;
+        }
+        
+        .footer-bottom p {
             opacity: 0.8;
         }
         
@@ -434,13 +568,113 @@
                     </article>
                 </div>
             </section>
+
+            <!-- Blog Section -->
+            <section class="blog-section">
+                <h2>Latest Blog Posts</h2>
+                <p class="blog-intro">Learn more about Markdown conversion, tips, and best practices from our expert guides.</p>
+                <div class="blog-grid">
+                    <article class="blog-card">
+                        <div class="blog-meta">
+                            <span class="blog-date">January 15, 2025</span>
+                            <span class="blog-category">Guide</span>
+                        </div>
+                        <h3><a href="/blog/convert-markdown-to-pdf-online-free">How to Convert Markdown Files to PDF Online for Free</a></h3>
+                        <p>Learn the step-by-step process of converting your Markdown files to PDF using our free online tool. No installation required.</p>
+                        <a href="/blog/convert-markdown-to-pdf-online-free" class="read-more">Read More →</a>
+                    </article>
+                    
+                    <article class="blog-card">
+                        <div class="blog-meta">
+                            <span class="blog-date">January 12, 2025</span>
+                            <span class="blog-category">Comparison</span>
+                        </div>
+                        <h3><a href="/blog/best-free-markdown-to-pdf-converters-2025">Best Free Markdown to PDF Converters in 2025</a></h3>
+                        <p>Discover why convertmdtopdf.online stands out as the top free choice among Markdown to PDF converters this year.</p>
+                        <a href="/blog/best-free-markdown-to-pdf-converters-2025" class="read-more">Read More →</a>
+                    </article>
+                    
+                    <article class="blog-card">
+                        <div class="blog-meta">
+                            <span class="blog-date">January 10, 2025</span>
+                            <span class="blog-category">Tutorial</span>
+                        </div>
+                        <h3><a href="/blog/convert-markdown-to-word-documents-online">Step-by-Step Guide: Convert Markdown to Word Documents Online</a></h3>
+                        <p>Master the process of converting Markdown files to Word documents for better collaboration and editing.</p>
+                        <a href="/blog/convert-markdown-to-word-documents-online" class="read-more">Read More →</a>
+                    </article>
+                    
+                    <article class="blog-card">
+                        <div class="blog-meta">
+                            <span class="blog-date">January 8, 2025</span>
+                            <span class="blog-category">Tips</span>
+                        </div>
+                        <h3><a href="/blog/markdown-tips-tricks-technical-writers">Markdown Tips and Tricks for Technical Writers</a></h3>
+                        <p>Essential tips and advanced tricks to improve your Markdown writing and get better conversion results.</p>
+                        <a href="/blog/markdown-tips-tricks-technical-writers" class="read-more">Read More →</a>
+                    </article>
+                    
+                    <article class="blog-card">
+                        <div class="blog-meta">
+                            <span class="blog-date">January 5, 2025</span>
+                            <span class="blog-category">Troubleshooting</span>
+                        </div>
+                        <h3><a href="/blog/troubleshooting-markdown-to-pdf-conversion">Troubleshooting Common Markdown to PDF Conversion Issues</a></h3>
+                        <p>Quick solutions to common problems you might encounter when converting Markdown files to PDF.</p>
+                        <a href="/blog/troubleshooting-markdown-to-pdf-conversion" class="read-more">Read More →</a>
+                    </article>
+                    
+                    <article class="blog-card">
+                        <div class="blog-meta">
+                            <span class="blog-date">January 3, 2025</span>
+                            <span class="blog-category">Guide</span>
+                        </div>
+                        <h3><a href="/blog/advanced-markdown-features-pdf-conversion">Advanced Markdown Features for Professional PDF Conversion</a></h3>
+                        <p>Explore advanced Markdown features that can enhance your PDF output and create more professional documents.</p>
+                        <a href="/blog/advanced-markdown-features-pdf-conversion" class="read-more">Read More →</a>
+                    </article>
+                </div>
+                <div class="blog-cta">
+                    <a href="/blog" class="cta-button">View All Blog Posts</a>
+                </div>
+            </section>
         </div>
     </main>
 
     <!-- Footer -->
     <footer>
         <div class="container">
-            <p>&copy; 2025 MarkdownConverter. Free online Markdown to PDF converter tool.</p>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/blog">Blog</a></li>
+                        <li><a href="/privacy">Privacy Policy</a></li>
+                        <li><a href="/terms">Terms of Service</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="/blog/convert-markdown-to-pdf-online-free">How to Convert Markdown to PDF</a></li>
+                        <li><a href="/blog/markdown-tips-tricks-technical-writers">Markdown Tips</a></li>
+                        <li><a href="/blog/troubleshooting-markdown-to-pdf-conversion">Troubleshooting Guide</a></li>
+                        <li><a href="/blog/best-free-markdown-to-pdf-converters-2025">Best Converters 2025</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="/contact">Contact Us</a></li>
+                        <li><a href="/support">Support</a></li>
+                        <li><a href="/feedback">Feedback</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 MarkdownConverter. Free online Markdown to PDF converter tool.</p>
+            </div>
         </div>
     </footer>
 </body>

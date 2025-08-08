@@ -6,6 +6,8 @@ import json
 from flask import Flask, request, render_template, send_file, flash, redirect, url_for, Response, jsonify
 from werkzeug.utils import secure_filename
 from docx import Document
+from docx.shared import Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 import io
 import uuid
 from datetime import datetime
@@ -168,8 +170,7 @@ def download_file(format, filename):
         )
         
         if format == 'pdf':
-            # For Vercel, we'll return HTML that can be printed to PDF
-            # In production, use a cloud PDF service
+            # Create beautifully formatted HTML for PDF conversion
             styled_html = f"""
             <!DOCTYPE html>
             <html>
@@ -177,112 +178,245 @@ def download_file(format, filename):
                 <meta charset="UTF-8">
                 <title>Markdown Document</title>
                 <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+                    
+                    * {{
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }}
+                    
                     body {{
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                        line-height: 1.6;
-                        color: #333;
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        line-height: 1.7;
+                        color: #1a202c;
                         max-width: 800px;
                         margin: 0 auto;
-                        padding: 20px;
+                        padding: 40px 20px;
                         background-color: white;
+                        font-size: 16px;
                     }}
+                    
                     h1, h2, h3, h4, h5, h6 {{
-                        color: #2c3e50;
-                        margin-top: 24px;
-                        margin-bottom: 12px;
+                        color: #2d3748;
+                        margin-top: 40px;
+                        margin-bottom: 20px;
                         page-break-after: avoid;
+                        font-weight: 600;
+                        line-height: 1.3;
                     }}
+                    
                     h1 {{
-                        font-size: 2rem;
-                        border-bottom: 2px solid #007bff;
-                        padding-bottom: 0.5rem;
+                        font-size: 2.5rem;
+                        border-bottom: 3px solid #667eea;
+                        padding-bottom: 15px;
+                        margin-top: 0;
+                        margin-bottom: 30px;
+                        color: #1a202c;
                     }}
+                    
                     h2 {{
+                        font-size: 2rem;
+                        border-bottom: 2px solid #e2e8f0;
+                        padding-bottom: 10px;
+                        margin-top: 35px;
+                        color: #2d3748;
+                    }}
+                    
+                    h3 {{
                         font-size: 1.5rem;
-                        border-bottom: 1px solid #e9ecef;
-                        padding-bottom: 0.25rem;
+                        color: #4a5568;
+                        margin-top: 30px;
                     }}
+                    
+                    h4 {{
+                        font-size: 1.25rem;
+                        color: #4a5568;
+                        margin-top: 25px;
+                    }}
+                    
                     p {{
-                        margin-bottom: 1rem;
+                        margin-bottom: 1.5rem;
+                        text-align: justify;
+                        color: #2d3748;
                     }}
+                    
                     code {{
-                        background-color: #f8f9fa;
-                        color: #e83e8c;
-                        padding: 2px 4px;
-                        border-radius: 3px;
-                        font-family: 'Monaco', 'Courier New', monospace;
-                        font-size: 0.875em;
+                        background-color: #f7fafc;
+                        color: #e53e3e;
+                        padding: 4px 8px;
+                        border-radius: 6px;
+                        font-family: 'Monaco', 'Courier New', 'Fira Code', monospace;
+                        font-size: 0.9em;
+                        border: 1px solid #e2e8f0;
                     }}
+                    
                     pre {{
-                        background-color: #f8f9fa;
-                        border: 1px solid #e9ecef;
-                        border-radius: 5px;
-                        padding: 12px;
+                        background-color: #f7fafc;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 8px;
+                        padding: 20px;
                         overflow-x: auto;
-                        margin-bottom: 1rem;
+                        margin: 25px 0;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
                     }}
+                    
                     pre code {{
                         background-color: transparent;
                         padding: 0;
-                        color: #333;
+                        color: #2d3748;
+                        border: none;
+                        font-size: 0.95em;
+                        line-height: 1.6;
                     }}
+                    
                     blockquote {{
-                        border-left: 4px solid #007bff;
-                        margin: 1rem 0;
-                        padding-left: 16px;
-                        color: #6c757d;
+                        border-left: 4px solid #667eea;
+                        margin: 25px 0;
+                        padding: 15px 25px;
+                        color: #4a5568;
                         font-style: italic;
+                        background-color: #f7fafc;
+                        border-radius: 0 8px 8px 0;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
                     }}
+                    
                     table {{
                         border-collapse: collapse;
                         width: 100%;
-                        margin: 16px 0;
-                        font-size: 0.9rem;
+                        margin: 25px 0;
+                        font-size: 0.95rem;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                        border-radius: 8px;
+                        overflow: hidden;
                     }}
+                    
                     table th, table td {{
-                        border: 1px solid #dee2e6;
-                        padding: 8px;
+                        border: 1px solid #e2e8f0;
+                        padding: 15px;
                         text-align: left;
                     }}
+                    
                     table th {{
-                        background-color: #f8f9fa;
+                        background-color: #667eea;
+                        color: white;
                         font-weight: 600;
+                        text-transform: uppercase;
+                        font-size: 0.85rem;
+                        letter-spacing: 0.5px;
                     }}
+                    
+                    table tr:nth-child(even) {{
+                        background-color: #f7fafc;
+                    }}
+                    
+                    table tr:hover {{
+                        background-color: #edf2f7;
+                    }}
+                    
                     ul, ol {{
-                        margin-bottom: 1rem;
-                        padding-left: 2rem;
+                        margin-bottom: 1.5rem;
+                        padding-left: 2.5rem;
+                        color: #2d3748;
                     }}
+                    
                     li {{
-                        margin-bottom: 0.25rem;
+                        margin-bottom: 0.75rem;
+                        line-height: 1.6;
                     }}
+                    
                     a {{
-                        color: #007bff;
+                        color: #667eea;
                         text-decoration: none;
+                        border-bottom: 1px solid transparent;
+                        transition: border-bottom 0.2s ease;
                     }}
+                    
                     a:hover {{
-                        text-decoration: underline;
+                        border-bottom: 1px solid #667eea;
                     }}
+                    
                     img {{
                         max-width: 100%;
                         height: auto;
-                        border-radius: 4px;
-                        margin: 0.5rem 0;
+                        border-radius: 8px;
+                        margin: 15px 0;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                     }}
+                    
                     hr {{
                         border: none;
-                        border-top: 2px solid #e9ecef;
-                        margin: 2rem 0;
+                        border-top: 2px solid #e2e8f0;
+                        margin: 40px 0;
+                        height: 1px;
                     }}
+                    
+                    /* Print styles for excellent PDF output */
                     @media print {{
                         body {{
                             margin: 0;
-                            padding: 20px;
+                            padding: 30px;
+                            font-size: 12pt;
+                            line-height: 1.6;
                         }}
+                        
                         h1, h2, h3, h4, h5, h6 {{
                             page-break-after: avoid;
+                            margin-top: 20pt;
+                            margin-bottom: 10pt;
                         }}
-                        pre, blockquote {{
+                        
+                        h1 {{
+                            font-size: 24pt;
+                            margin-top: 0;
+                        }}
+                        
+                        h2 {{
+                            font-size: 18pt;
+                        }}
+                        
+                        h3 {{
+                            font-size: 14pt;
+                        }}
+                        
+                        pre, blockquote, table {{
                             page-break-inside: avoid;
+                            margin: 15pt 0;
+                        }}
+                        
+                        p {{
+                            margin-bottom: 12pt;
+                            text-align: justify;
+                        }}
+                        
+                        a {{
+                            color: #000;
+                            text-decoration: underline;
+                        }}
+                        
+                        code {{
+                            font-size: 10pt;
+                        }}
+                        
+                        pre {{
+                            font-size: 10pt;
+                            padding: 15pt;
+                        }}
+                        
+                        table {{
+                            font-size: 10pt;
+                        }}
+                        
+                        table th, table td {{
+                            padding: 8pt;
+                        }}
+                        
+                        ul, ol {{
+                            margin-bottom: 12pt;
+                        }}
+                        
+                        li {{
+                            margin-bottom: 6pt;
                         }}
                     }}
                 </style>
@@ -307,23 +441,87 @@ def download_file(format, filename):
             )
             
         elif format == 'docx':
-            # Convert to Word document
+            # Convert to Word document with improved formatting
             doc = Document()
             
-            # Add title if present
+            # Set document styles
+            style = doc.styles['Normal']
+            style.font.name = 'Calibri'
+            style.font.size = Pt(11)
+            style.paragraph_format.line_spacing = 1.15
+            
+            # Process markdown content
             lines = md_content.split('\n')
+            in_list = False
+            list_type = None
+            
             for line in lines:
                 line = line.strip()
+                
                 if line.startswith('# '):
-                    doc.add_heading(line[2:], 0)
+                    heading = doc.add_heading(line[2:], 0)
+                    heading.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 elif line.startswith('## '):
-                    doc.add_heading(line[3:], 1)
+                    heading = doc.add_heading(line[3:], 1)
+                    heading.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 elif line.startswith('### '):
-                    doc.add_heading(line[4:], 2)
+                    heading = doc.add_heading(line[4:], 2)
+                    heading.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 elif line.startswith('#### '):
-                    doc.add_heading(line[5:], 3)
+                    heading = doc.add_heading(line[5:], 3)
+                    heading.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                elif line.startswith('- ') or line.startswith('* '):
+                    # Unordered list
+                    if not in_list or list_type != 'unordered':
+                        in_list = True
+                        list_type = 'unordered'
+                    p = doc.add_paragraph(line[2:], style='List Bullet')
+                elif line.startswith('1. ') or line.startswith('2. ') or line.startswith('3. ') or line.startswith('4. ') or line.startswith('5. '):
+                    # Ordered list
+                    if not in_list or list_type != 'ordered':
+                        in_list = True
+                        list_type = 'ordered'
+                    p = doc.add_paragraph(line[3:], style='List Number')
+                elif line.startswith('```'):
+                    # Code block
+                    if not in_list:
+                        in_list = False
+                    p = doc.add_paragraph()
+                    p.style = 'No Spacing'
+                elif line.startswith('> '):
+                    # Blockquote
+                    if not in_list:
+                        in_list = False
+                    p = doc.add_paragraph(line[2:])
+                    p.style = 'Quote'
+                elif line == '':
+                    # Empty line - end lists
+                    if in_list:
+                        in_list = False
+                        list_type = None
                 elif line and not line.startswith('#'):
-                    doc.add_paragraph(line)
+                    # Regular paragraph
+                    if not in_list:
+                        in_list = False
+                        list_type = None
+                    
+                    # Handle inline formatting
+                    formatted_text = line
+                    formatted_text = formatted_text.replace('**', '**')  # Bold
+                    formatted_text = formatted_text.replace('*', '*')    # Italic
+                    formatted_text = formatted_text.replace('`', '`')    # Code
+                    
+                    p = doc.add_paragraph(formatted_text)
+                    
+                    # Apply formatting
+                    for run in p.runs:
+                        if '**' in run.text:
+                            run.bold = True
+                        if '*' in run.text and not '**' in run.text:
+                            run.italic = True
+                        if '`' in run.text:
+                            run.font.name = 'Courier New'
+                            run.font.size = Pt(10)
             
             doc_io = io.BytesIO()
             doc.save(doc_io)
@@ -405,6 +603,38 @@ def send_ad_inquiry():
     except Exception as e:
         logging.error(f"Error processing ad inquiry: {e}")
         return jsonify({'success': False, 'message': 'An error occurred. Please try again.'}), 500
+
+@app.route('/blog')
+def blog_index():
+    """Blog index page"""
+    try:
+        return render_template('blog_index.html')
+    except Exception as e:
+        logging.error(f"Error in blog index route: {e}")
+        return "Blog coming soon!", 404
+
+@app.route('/blog/<post_name>')
+def blog_post(post_name):
+    """Serve individual blog posts"""
+    try:
+        # Map post names to their HTML files
+        post_files = {
+            'convert-markdown-to-pdf-online-free': 'blog/convert-markdown-to-pdf-online-free.html',
+            'best-free-markdown-to-pdf-converters-2025': 'blog/best-free-markdown-to-pdf-converters-2025.html',
+            'convert-markdown-to-word-documents-online': 'blog/convert-markdown-to-word-documents-online.html',
+            'markdown-tips-tricks-technical-writers': 'blog/markdown-tips-tricks-technical-writers.html',
+            'troubleshooting-markdown-to-pdf-conversion': 'blog/troubleshooting-markdown-to-pdf-conversion.html'
+        }
+        
+        if post_name in post_files:
+            with open(post_files[post_name], 'r', encoding='utf-8') as f:
+                content = f.read()
+            return content
+        else:
+            return "Blog post not found", 404
+    except Exception as e:
+        logging.error(f"Error serving blog post {post_name}: {e}")
+        return "Blog post not found", 404
 
 @app.errorhandler(413)
 def too_large(e):

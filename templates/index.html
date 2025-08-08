@@ -736,11 +736,23 @@
         
         <div class="output-area" id="output-area">
           <h3>Preview</h3>
-          <div class="preview-content" id="preview-content"></div>
-          <div class="download-buttons" id="download-buttons">
-            <a href="#" class="download-btn" id="download-pdf">Download as PDF</a>
-            <a href="#" class="download-btn word" id="download-word">Download as Word</a>
+          <div class="preview-content" id="preview-content">
+            {% if preview_content %}
+              {{ preview_content | safe }}
+            {% endif %}
           </div>
+          <div class="download-buttons" id="download-buttons">
+            {% if filename %}
+              <a href="/download/pdf/{{ filename }}" class="download-btn" id="download-pdf">Download as PDF</a>
+              <a href="/download/docx/{{ filename }}" class="download-btn word" id="download-word">Download as Word</a>
+            {% else %}
+              <a href="#" class="download-btn" id="download-pdf">Download as PDF</a>
+              <a href="#" class="download-btn word" id="download-word">Download as Word</a>
+            {% endif %}
+          </div>
+          {% if filename %}
+            <div data-filename="{{ filename }}" style="display: none;"></div>
+          {% endif %}
         </div>
       </section>
     </div>
@@ -831,30 +843,240 @@
         convertBtn.disabled = true;
         loadingSpinner.style.display = 'inline-block';
 
-        setTimeout(function() {
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            const content = e.target.result;
-            const htmlContent = convertMarkdownToHtml(content);
-            previewContent.innerHTML = htmlContent;
-            outputArea.classList.add('show');
-            convertBtn.disabled = false;
-            loadingSpinner.style.display = 'none';
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Upload file to server
+        fetch('/upload', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Upload failed');
+          }
+          return response.text();
+        })
+        .then(html => {
+          // Parse the response to extract the filename and preview content
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          
+          // Extract filename from the response
+          const filenameElement = doc.querySelector('[data-filename]');
+          const filename = filenameElement ? filenameElement.getAttribute('data-filename') : null;
+          
+          // Extract preview content
+          const previewElement = doc.querySelector('#preview-content');
+          if (previewElement) {
+            previewContent.innerHTML = previewElement.innerHTML;
+          } else {
+            // Fallback: convert markdown to HTML client-side
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              const content = e.target.result;
+              const htmlContent = convertMarkdownToHtml(content);
+              previewContent.innerHTML = htmlContent;
+            };
+            reader.readAsText(file);
+          }
+          
+          outputArea.classList.add('show');
+          convertBtn.disabled = false;
+          loadingSpinner.style.display = 'none';
+          
+          // Set up download links with actual server endpoints
+          if (filename) {
+            downloadPdf.href = `/download/pdf/${filename}`;
+            downloadWord.href = `/download/docx/${filename}`;
             
+            downloadPdf.onclick = function(e) {
+              // Let the link work normally - it will trigger the download
+            };
+            downloadWord.onclick = function(e) {
+              // Let the link work normally - it will trigger the download
+            };
+          } else {
+            // Fallback for client-side only
             downloadPdf.href = '#';
             downloadWord.href = '#';
             downloadPdf.onclick = function(e) {
               e.preventDefault();
-              alert('PDF download would be processed here. In a real implementation, this would convert and download the file.');
+              // Create a blob and download it
+              const content = fileInput.files[0];
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                const markdownContent = e.target.result;
+                const htmlContent = convertMarkdownToHtml(markdownContent);
+                const styledHtml = createStyledHtml(htmlContent, file.name);
+                const blob = new Blob([styledHtml], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name.replace(/\.(md|markdown)$/i, '.html');
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              };
+              reader.readAsText(content);
             };
             downloadWord.onclick = function(e) {
               e.preventDefault();
-              alert('Word download would be processed here. In a real implementation, this would convert and download the file.');
+              alert('Word download requires server-side processing. Please use the server version.');
             };
-          };
-          reader.readAsText(file);
-        }, 1500);
+          }
+        })
+        .catch(error => {
+          console.error('Upload error:', error);
+          alert('Upload failed. Please try again.');
+          convertBtn.disabled = false;
+          loadingSpinner.style.display = 'none';
+        });
       });
+
+      function createStyledHtml(content, filename) {
+        return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>${filename.replace(/\.(md|markdown)$/i, '')}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: white;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: #2c3e50;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            page-break-after: avoid;
+        }
+        h1 {
+            font-size: 2.5rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        h2 {
+            font-size: 2rem;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 8px;
+        }
+        h3 {
+            font-size: 1.5rem;
+            color: #495057;
+        }
+        p {
+            margin-bottom: 1.2rem;
+            text-align: justify;
+        }
+        code {
+            background-color: #f8f9fa;
+            color: #e83e8c;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #333;
+        }
+        blockquote {
+            border-left: 4px solid #667eea;
+            margin: 20px 0;
+            padding: 10px 20px;
+            color: #6c757d;
+            font-style: italic;
+            background-color: #f8f9fa;
+            border-radius: 0 6px 6px 0;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        table th, table td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: left;
+        }
+        table th {
+            background-color: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        ul, ol {
+            margin-bottom: 1.2rem;
+            padding-left: 2.5rem;
+        }
+        li {
+            margin-bottom: 0.5rem;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            margin: 10px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        hr {
+            border: none;
+            border-top: 2px solid #e9ecef;
+            margin: 30px 0;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 20px;
+                font-size: 12pt;
+            }
+            h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid;
+            }
+            pre, blockquote, table {
+                page-break-inside: avoid;
+            }
+            a {
+                color: #000;
+            }
+        }
+    </style>
+</head>
+<body>
+    ${content}
+</body>
+</html>`;
+      }
 
       function convertMarkdownToHtml(markdown) {
         let html = markdown
