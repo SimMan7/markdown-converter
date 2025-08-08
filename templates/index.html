@@ -848,13 +848,15 @@
         formData.append('file', file);
 
         // Upload file to server
+        console.log('Uploading file to server...');
         fetch('/upload', {
           method: 'POST',
           body: formData
         })
         .then(response => {
+          console.log('Upload response status:', response.status);
           if (!response.ok) {
-            throw new Error('Upload failed');
+            throw new Error('Upload failed: ' + response.status);
           }
           return response.text();
         })
@@ -866,6 +868,7 @@
           // Extract filename from the response
           const filenameElement = doc.querySelector('[data-filename]');
           const filename = filenameElement ? filenameElement.getAttribute('data-filename') : null;
+          console.log('Extracted filename:', filename);
           
           // Extract preview content
           const previewElement = doc.querySelector('#preview-content');
@@ -891,12 +894,11 @@
             downloadPdf.href = `/download/pdf/${filename}`;
             downloadWord.href = `/download/docx/${filename}`;
             
-            downloadPdf.onclick = function(e) {
-              // Let the link work normally - it will trigger the download
-            };
-            downloadWord.onclick = function(e) {
-              // Let the link work normally - it will trigger the download
-            };
+            // Remove any existing onclick handlers to let the links work normally
+            downloadPdf.onclick = null;
+            downloadWord.onclick = null;
+            
+            console.log('Download links set up:', downloadPdf.href, downloadWord.href);
           } else {
             // Fallback for client-side only
             downloadPdf.href = '#';
