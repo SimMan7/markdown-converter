@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - Markdown Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>API Test - Markdown Converter</h1>
+    
+    <div class="test-section">
+        <h2>1. Test API Endpoint</h2>
+        <button onclick="testAPI()">Test /api/test</button>
+        <div id="api-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Test Storage Debug</h2>
+        <button onclick="testStorage()">Test /api/debug/storage</button>
+        <div id="storage-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Test File Upload</h2>
+        <input type="file" id="test-file" accept=".md,.markdown">
+        <button onclick="testUpload()">Upload Test File</button>
+        <div id="upload-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Test Download (if file uploaded)</h2>
+        <button onclick="testDownload('pdf')">Test PDF Download</button>
+        <button onclick="testDownload('docx')">Test DOCX Download</button>
+        <div id="download-result" class="result"></div>
+    </div>
+
+    <script>
+        let uploadedFilename = null;
+
+        async function testAPI() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch('/api/test');
+                const data = await response.json();
+                
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testStorage() {
+            const resultDiv = document.getElementById('storage-result');
+            resultDiv.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch('/api/debug/storage');
+                const data = await response.json();
+                
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testUpload() {
+            const fileInput = document.getElementById('test-file');
+            const resultDiv = document.getElementById('upload-result');
+            
+            if (!fileInput.files[0]) {
+                resultDiv.textContent = 'Please select a file first';
+                resultDiv.className = 'result error';
+                return;
+            }
+            
+            resultDiv.textContent = 'Uploading...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    uploadedFilename = data.filename;
+                    resultDiv.textContent = JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = 'Upload failed: ' + data.error;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testDownload(format) {
+            const resultDiv = document.getElementById('download-result');
+            
+            if (!uploadedFilename) {
+                resultDiv.textContent = 'Please upload a file first';
+                resultDiv.className = 'result error';
+                return;
+            }
+            
+            resultDiv.textContent = `Testing ${format.toUpperCase()} download...`;
+            
+            try {
+                const response = await fetch(`/api/download/${format}/${uploadedFilename}`);
+                
+                if (response.ok) {
+                    resultDiv.textContent = `${format.toUpperCase()} download successful!`;
+                    resultDiv.className = 'result success';
+                    
+                    // Trigger download
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `test.${format === 'pdf' ? 'html' : 'txt'}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    const errorData = await response.json();
+                    resultDiv.textContent = `Download failed: ${errorData.error}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message;
+                resultDiv.className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>

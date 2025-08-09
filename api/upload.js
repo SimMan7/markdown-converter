@@ -2,9 +2,7 @@ import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-
-// In-memory storage for Vercel (since filesystem is read-only)
-const fileStorage = new Map();
+import fileStorage from './storage.js';
 
 export const config = {
   api: {
@@ -62,7 +60,7 @@ export default async function handler(req, res) {
     const uniqueId = uuidv4();
     const filename = `${uniqueId}_${uploadedFile.originalFilename}`;
     
-    // Store in memory
+    // Store in shared memory
     fileStorage.set(filename, {
       content: fileContent,
       originalFilename: uploadedFile.originalFilename,

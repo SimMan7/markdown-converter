@@ -1,4 +1,4 @@
-import { fileStorage } from '../upload.js';
+import fileStorage from '../storage.js';
 import path from 'path';
 
 export default async function handler(req, res) {
