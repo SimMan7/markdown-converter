@@ -1,0 +1,30 @@
+{
+  "name": "markdown-converter",
+  "version": "1.0.0",
+  "description": "Markdown to PDF/Word converter with Vercel deployment",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "formidable": "^3.5.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "vercel": "^32.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "markdown",
+    "pdf",
+    "converter",
+    "vercel",
+    "serverless"
+  ],
+  "author": "MarkdownConverter",
+  "license": "MIT"
+}

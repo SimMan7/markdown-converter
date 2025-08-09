@@ -1,18 +1,29 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "app.py",
-      "use": "@vercel/python"
+  "functions": {
+    "api/download/[...params].js": {
+      "maxDuration": 30
+    },
+    "api/upload.js": {
+      "maxDuration": 30
     }
-  ],
+  },
   "routes": [
     {
-      "src": "/(.*)",
-      "dest": "app.py"
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/blog",
+      "dest": "/blog.html"
+    },
+    {
+      "src": "/blog/(.*)",
+      "dest": "/blog/$1.html"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
     }
-  ],
-  "env": {
-    "PYTHONPATH": "."
-  }
+  ]
 } 

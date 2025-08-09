@@ -753,13 +753,13 @@
           <div class="download-buttons" id="download-buttons">
             {% if filename %}
               <button class="download-btn download-pdf" 
-                      data-file-path="/download/pdf/{{ filename }}"
+                      data-file-path="/api/download/pdf/{{ filename }}"
                       data-file-name="{{ original_filename | replace('.md', '') | replace('.markdown', '') }}">
                 Download as PDF
               </button>
 
               <button class="download-btn word download-docx" 
-                      data-file-path="/download/docx/{{ filename }}"
+                      data-file-path="/api/download/docx/{{ filename }}"
                       data-file-name="{{ original_filename | replace('.md', '') | replace('.markdown', '') }}">
                 Download as Word
               </button>
@@ -867,7 +867,7 @@
 
         // Upload file to server
         console.log('Uploading file to server...');
-        fetch('/upload', {
+        fetch('/api/upload', {
           method: 'POST',
           body: formData
         })
@@ -876,32 +876,26 @@
           if (!response.ok) {
             throw new Error('Upload failed: ' + response.status);
           }
-          return response.text();
+          return response.json();
         })
-        .then(html => {
-          // Parse the response to extract the filename and preview content
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(html, 'text/html');
+        .then(data => {
+          console.log('Upload response data:', data);
           
-          // Extract filename from the response
-          const filenameElement = doc.querySelector('[data-filename]');
-          const filename = filenameElement ? filenameElement.getAttribute('data-filename') : null;
+          if (!data.success) {
+            throw new Error(data.error || 'Upload failed');
+          }
+          
+          const filename = data.filename;
           console.log('Extracted filename:', filename);
           
-          // Extract preview content
-          const previewElement = doc.querySelector('#preview-content');
-          if (previewElement) {
-            previewContent.innerHTML = previewElement.innerHTML;
-          } else {
-            // Fallback: convert markdown to HTML client-side
-            const reader = new FileReader();
-            reader.onload = function(e) {
-              const content = e.target.result;
-              const htmlContent = convertMarkdownToHtml(content);
-              previewContent.innerHTML = htmlContent;
-            };
-            reader.readAsText(file);
-          }
+          // Convert markdown to HTML for preview
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const content = e.target.result;
+            const htmlContent = convertMarkdownToHtml(content);
+            previewContent.innerHTML = htmlContent;
+          };
+          reader.readAsText(file);
           
           outputArea.classList.add('show');
           convertBtn.disabled = false;
@@ -914,13 +908,13 @@
             const downloadWordBtn = document.querySelector('.download-docx');
             
             if (downloadPdfBtn) {
-              downloadPdfBtn.setAttribute('data-file-path', `/download/pdf/${filename}`);
+              downloadPdfBtn.setAttribute('data-file-path', `/api/download/pdf/${filename}`);
               downloadPdfBtn.setAttribute('data-file-name', file.name.replace(/\.(md|markdown)$/i, ''));
               downloadPdfBtn.disabled = false;
             }
             
             if (downloadWordBtn) {
-              downloadWordBtn.setAttribute('data-file-path', `/download/docx/${filename}`);
+              downloadWordBtn.setAttribute('data-file-path', `/api/download/docx/${filename}`);
               downloadWordBtn.setAttribute('data-file-name', file.name.replace(/\.(md|markdown)$/i, ''));
               downloadWordBtn.disabled = false;
             }
