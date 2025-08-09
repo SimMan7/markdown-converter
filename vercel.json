@@ -8,6 +8,22 @@
   ],
   "routes": [
     {
+      "src": "/upload",
+      "dest": "app.py"
+    },
+    {
+      "src": "/download/(.*)",
+      "dest": "app.py"
+    },
+    {
+      "src": "/ads.txt",
+      "dest": "app.py"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "app.py"
     }
