@@ -24,6 +24,11 @@
     {
       "src": "/static/(.*)",
       "dest": "/static/$1"
+    },
+    {
+      "src": "/ads.txt",
+      "dest": "/ads.txt"
     }
-  ]
+  ],
+  "public": true
 } 
