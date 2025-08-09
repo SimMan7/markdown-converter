@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Meta Tags -->
+    <title>Markdown to PDF Converter - Free Online Tool | Convert Markdown to PDF & Word</title>
+    <meta name="description" content="Free online Markdown to PDF converter. Convert your Markdown files to PDF and Word documents instantly. No registration required. Fast, secure, and mobile-friendly.">
+    <meta name="keywords" content="markdown to pdf converter, markdown preview online, markdown to word, markdown editor, pdf converter, document converter">
+    <meta name="author" content="MarkdownConverter">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Markdown to PDF Converter - Free Online Tool">
+    <meta property="og:description" content="Convert Markdown files to PDF and Word documents instantly. Free online tool with real-time preview.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://convertmdtopdf.online">
+    <meta property="og:image" content="https://convertmdtopdf.online/static/images/preview.png">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Markdown to PDF Converter - Free Online Tool">
+    <meta name="twitter:description" content="Convert Markdown files to PDF and Word documents instantly. Free online tool with real-time preview.">
+    <meta name="twitter:image" content="https://convertmdtopdf.online/static/images/preview.png">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://convertmdtopdf.online">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1>Markdown to PDF Converter</h1>
+            <p>Convert your Markdown files to PDF and Word documents instantly. Free online tool with real-time preview.</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-content">
+                        <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7,10 12,15 17,10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <h3>Upload Markdown File</h3>
+                        <p>Drag and drop your .md or .markdown file here, or click to browse</p>
+                        <input type="file" id="file-input" accept=".md,.markdown" style="display: none;">
+                        <button class="upload-btn" onclick="document.getElementById('file-input').click()">Choose File</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Preview Section -->
+            <section class="preview-section" id="preview-section" style="display: none;">
+                <div class="preview-header">
+                    <h3>Preview</h3>
+                    <div class="download-buttons">
+                        <button class="download-btn pdf" id="download-pdf" disabled>Download PDF</button>
+                        <button class="download-btn word" id="download-word" disabled>Download Word</button>
+                    </div>
+                </div>
+                <div class="preview-content" id="preview-content"></div>
+            </section>
+
+            <!-- Features Section -->
+            <section class="features-section">
+                <h2>Why Choose Our Markdown to PDF Converter?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🚀</div>
+                        <h3>Fast & Free</h3>
+                        <p>Convert your Markdown files to PDF instantly. No registration required, completely free to use.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👁️</div>
+                        <h3>Real-time Preview</h3>
+                        <p>See your Markdown content rendered instantly as you upload. Preview before converting.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📄</div>
+                        <h3>Multiple Formats</h3>
+                        <p>Convert to PDF with professional styling or export to Word documents for further editing.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Secure & Private</h3>
+                        <p>Your files are processed securely and automatically deleted after conversion. No data stored.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- How to Use Section -->
+            <section class="how-to-section">
+                <h2>How to Convert Markdown to PDF</h2>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h3>Upload Your File</h3>
+                        <p>Drag and drop your Markdown (.md or .markdown) file into the upload area above.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h3>Preview Content</h3>
+                        <p>Review your rendered Markdown content in the preview section to ensure it looks correct.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h3>Download</h3>
+                        <p>Click "Download PDF" or "Download Word" to get your converted document instantly.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Markdown to PDF Converter. Free online tool for converting Markdown files to PDF and Word documents.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/static/script.js"></script>
+</body>
+</html>

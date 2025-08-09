@@ -8,4 +8,4 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import app
 
 # Export the Flask app for Vercel
-handler = app
+app.debug = False  # Disable debug mode for production
