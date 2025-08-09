@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/*.py",
+      "src": "api/index.py",
       "use": "@vercel/python"
     },
     {
@@ -14,18 +14,6 @@
     {
       "src": "/static/(.*)",
       "dest": "/static/$1"
-    },
-    {
-      "src": "/ads.txt",
-      "dest": "/api/ads.py"
-    },
-    {
-      "src": "/upload",
-      "dest": "/api/upload.py"
-    },
-    {
-      "src": "/debug",
-      "dest": "/api/debug.py"
     },
     {
       "src": "/",
