@@ -18,8 +18,13 @@ import tempfile
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Create Flask app
-app = Flask(__name__)
+# Create Flask app with proper template and static folder configuration for Vercel
+template_dir = os.path.abspath('templates')
+static_dir = os.path.abspath('static')
+
+app = Flask(__name__, 
+           template_folder=template_dir,
+           static_folder=static_dir)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
 
 # Configuration
@@ -37,8 +42,13 @@ try:
 except Exception as e:
     logging.error(f"Error creating upload folder: {e}")
 
-# In-memory storage for Vercel (since filesystem is read-only)
+# File storage for Vercel serverless environment
 file_storage = {}
+
+# Configure for Vercel serverless environment
+def get_temp_dir():
+    """Get temporary directory for Vercel"""
+    return '/tmp' if os.path.exists('/tmp') else tempfile.gettempdir()
 
 # reCAPTCHA configuration
 RECAPTCHA_SECRET_KEY = "6LeSYJ0rAAAAABx3xOqWudqBdr36gK6IcTUnBgaK"
@@ -106,6 +116,23 @@ def ads_txt():
         logging.error(f"Error serving ads.txt: {e}")
         return Response("google.com, ca-pub-6865885814212781, DIRECT, f08c47fec0942fa0", mimetype='text/plain')
 
+@app.route('/debug')
+def debug():
+    """Debug route for Vercel deployment troubleshooting"""
+    import os
+    return jsonify({
+        'template_folder': app.template_folder,
+        'static_folder': app.static_folder,
+        'templates_exist': os.path.exists(app.template_folder),
+        'template_files': os.listdir(app.template_folder) if os.path.exists(app.template_folder) else [],
+        'static_files': os.listdir(app.static_folder) if os.path.exists(app.static_folder) else [],
+        'cwd': os.getcwd(),
+        'files_in_cwd': os.listdir('.'),
+        'temp_dir': get_temp_dir(),
+        'temp_dir_exists': os.path.exists(get_temp_dir()),
+        'file_storage_count': len(file_storage)
+    })
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     """Handle file upload"""
@@ -137,12 +164,22 @@ def upload_file():
         # Read file content
         content = file.read().decode('utf-8')
         
-        # Store in memory (in production, use cloud storage)
+        # Store in memory for Vercel serverless environment
         file_storage[filename] = {
             'content': content,
             'original_filename': file.filename,
             'upload_time': datetime.now()
         }
+        
+        # Also save to temp directory for Vercel
+        temp_dir = get_temp_dir()
+        temp_file_path = os.path.join(temp_dir, filename)
+        try:
+            with open(temp_file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            file_storage[filename]['temp_path'] = temp_file_path
+        except Exception as e:
+            logging.warning(f"Could not save to temp directory: {e}")
         
         # Convert markdown to HTML for preview
         html_content = markdown.markdown(
@@ -452,11 +489,12 @@ def download_file(format, filename):
                 # Configure fonts
                 font_config = FontConfiguration()
                 
-                # Create PDF from HTML
+                # Create PDF from HTML with Vercel-compatible settings
                 html_doc = HTML(string=styled_html)
                 pdf = html_doc.write_pdf(
                     stylesheets=[],
-                    font_config=font_config
+                    font_config=font_config,
+                    optimize_images=False  # Disable image optimization for Vercel
                 )
                 
                 # Get original filename without extension and unique ID
