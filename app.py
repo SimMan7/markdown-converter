@@ -11,6 +11,8 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 import io
 import uuid
 from datetime import datetime
+from weasyprint import HTML, CSS
+from weasyprint.text.fonts import FontConfiguration
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -156,9 +158,15 @@ def upload_file():
 def download_file(format, filename):
     """Download converted file"""
     try:
+        # Validate file exists in storage
         if filename not in file_storage:
-            flash('File not found. Please upload a file first.', 'error')
-            return redirect(url_for('index'))
+            logging.warning(f"File not found in storage: {filename}")
+            return jsonify({'error': 'File not found'}), 404
+        
+        # Validate format
+        if format not in ['pdf', 'docx']:
+            logging.warning(f"Invalid format requested: {format}")
+            return jsonify({'error': 'Invalid file format'}), 400
         
         file_data = file_storage[filename]
         md_content = file_data['content']
@@ -427,18 +435,43 @@ def download_file(format, filename):
             </html>
             """
             
-            # Get original filename without extension and unique ID
-            original_name = filename.split('_', 1)[1] if '_' in filename else filename
-            base_name = os.path.splitext(original_name)[0]
-            
-            return Response(
-                styled_html,
-                mimetype='text/html',
-                headers={
-                    'Content-Disposition': f'attachment; filename="{base_name}.html"',
-                    'Content-Type': 'text/html'
-                }
-            )
+            # Generate actual PDF using WeasyPrint
+            try:
+                # Configure fonts
+                font_config = FontConfiguration()
+                
+                # Create PDF from HTML
+                pdf = HTML(string=styled_html).write_pdf(
+                    stylesheets=[],
+                    font_config=font_config
+                )
+                
+                # Get original filename without extension and unique ID
+                original_name = filename.split('_', 1)[1] if '_' in filename else filename
+                base_name = os.path.splitext(original_name)[0]
+                
+                # Create response with PDF data
+                response = Response(pdf, mimetype='application/pdf')
+                response.headers['Content-Disposition'] = f'attachment; filename="{base_name}.pdf"'
+                response.headers['Content-Type'] = 'application/pdf'
+                response.headers['Cache-Control'] = 'no-cache'
+                
+                return response
+                
+            except Exception as e:
+                logging.error(f"PDF generation error: {e}")
+                # Fallback to HTML if PDF generation fails
+                original_name = filename.split('_', 1)[1] if '_' in filename else filename
+                base_name = os.path.splitext(original_name)[0]
+                
+                return Response(
+                    styled_html,
+                    mimetype='text/html',
+                    headers={
+                        'Content-Disposition': f'attachment; filename="{base_name}.html"',
+                        'Content-Type': 'text/html'
+                    }
+                )
             
         elif format == 'docx':
             # Convert to Word document with improved formatting
@@ -538,13 +571,12 @@ def download_file(format, filename):
                 mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
             )
         else:
-            flash('Invalid download format', 'error')
-            return redirect(url_for('index'))
+            logging.warning(f"Invalid format requested: {format}")
+            return jsonify({'error': 'Invalid file format'}), 400
             
     except Exception as e:
         logging.error(f"Download error: {e}")
-        flash(f'Error converting file: {str(e)}', 'error')
-        return redirect(url_for('index'))
+        return jsonify({'error': f'Error converting file: {str(e)}'}), 500
 
 @app.route('/api/send-ad-inquiry', methods=['POST'])
 def send_ad_inquiry():
