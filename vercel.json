@@ -1,17 +1,27 @@
 {
   "version": 2,
-  "functions": {
-    "api/download/[...params].js": {
-      "maxDuration": 30
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
     },
-    "api/upload.js": {
-      "maxDuration": 30
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "static/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "blog/**/*.html",
+      "use": "@vercel/static"
     }
-  },
+  ],
   "routes": [
     {
-      "src": "/",
-      "dest": "/index.html"
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
     },
     {
       "src": "/blog",
@@ -28,7 +38,10 @@
     {
       "src": "/ads.txt",
       "dest": "/ads.txt"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
-  ],
-  "public": true
+  ]
 } 
