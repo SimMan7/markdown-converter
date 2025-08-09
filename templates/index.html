@@ -431,6 +431,15 @@
     .download-btn.word:hover {
       box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
     }
+    .download-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .download-btn:disabled:hover {
+      transform: none;
+      box-shadow: none;
+    }
     
     .preview-content {
       background: white;
@@ -743,11 +752,20 @@
           </div>
           <div class="download-buttons" id="download-buttons">
             {% if filename %}
-              <a href="/download/pdf/{{ filename }}" class="download-btn" id="download-pdf">Download as PDF</a>
-              <a href="/download/docx/{{ filename }}" class="download-btn word" id="download-word">Download as Word</a>
+              <button class="download-btn download-pdf" 
+                      data-file-path="/download/pdf/{{ filename }}"
+                      data-file-name="{{ original_filename | replace('.md', '') | replace('.markdown', '') }}">
+                Download as PDF
+              </button>
+
+              <button class="download-btn word download-docx" 
+                      data-file-path="/download/docx/{{ filename }}"
+                      data-file-name="{{ original_filename | replace('.md', '') | replace('.markdown', '') }}">
+                Download as Word
+              </button>
             {% else %}
-              <a href="#" class="download-btn" id="download-pdf">Download as PDF</a>
-              <a href="#" class="download-btn word" id="download-word">Download as Word</a>
+              <button class="download-btn download-pdf" disabled>Download as PDF</button>
+              <button class="download-btn word download-docx" disabled>Download as Word</button>
             {% endif %}
           </div>
           {% if filename %}
@@ -889,45 +907,25 @@
           convertBtn.disabled = false;
           loadingSpinner.style.display = 'none';
           
-          // Set up download links with actual server endpoints
+          // Set up download buttons with data attributes for direct download
           if (filename) {
-            downloadPdf.href = `/download/pdf/${filename}`;
-            downloadWord.href = `/download/docx/${filename}`;
+            // Update the download buttons with proper data attributes
+            const downloadPdfBtn = document.querySelector('.download-pdf');
+            const downloadWordBtn = document.querySelector('.download-docx');
             
-            // Remove any existing onclick handlers to let the links work normally
-            downloadPdf.onclick = null;
-            downloadWord.onclick = null;
+            if (downloadPdfBtn) {
+              downloadPdfBtn.setAttribute('data-file-path', `/download/pdf/${filename}`);
+              downloadPdfBtn.setAttribute('data-file-name', file.name.replace(/\.(md|markdown)$/i, ''));
+              downloadPdfBtn.disabled = false;
+            }
             
-            console.log('Download links set up:', downloadPdf.href, downloadWord.href);
-          } else {
-            // Fallback for client-side only
-            downloadPdf.href = '#';
-            downloadWord.href = '#';
-            downloadPdf.onclick = function(e) {
-              e.preventDefault();
-              // Create a blob and download it
-              const content = fileInput.files[0];
-              const reader = new FileReader();
-              reader.onload = function(e) {
-                const markdownContent = e.target.result;
-                const htmlContent = convertMarkdownToHtml(markdownContent);
-                const styledHtml = createStyledHtml(htmlContent, file.name);
-                const blob = new Blob([styledHtml], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = file.name.replace(/\.(md|markdown)$/i, '.html');
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              };
-              reader.readAsText(content);
-            };
-            downloadWord.onclick = function(e) {
-              e.preventDefault();
-              alert('Word download requires server-side processing. Please use the server version.');
-            };
+            if (downloadWordBtn) {
+              downloadWordBtn.setAttribute('data-file-path', `/download/docx/${filename}`);
+              downloadWordBtn.setAttribute('data-file-name', file.name.replace(/\.(md|markdown)$/i, ''));
+              downloadWordBtn.disabled = false;
+            }
+            
+            console.log('Download buttons set up with data attributes');
           }
         })
         .catch(error => {
@@ -1080,6 +1078,81 @@
 </html>`;
       }
 
+      // Direct download function - replaces querySelector approach
+      function downloadFile(filePath, fileName, fileType = 'pdf') {
+        try {
+          const link = document.createElement('a');
+          link.href = filePath;
+          
+          // Set appropriate filename with extension
+          const extension = fileType === 'pdf' ? '.pdf' : '.docx';
+          const downloadName = fileName ? 
+            (fileName.endsWith(extension) ? fileName : fileName + extension) : 
+            `converted-file${extension}`;
+            
+          link.download = downloadName;
+          link.style.display = 'none';
+          
+          // Append, click, and remove
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          console.log(`Download initiated: ${downloadName}`);
+        } catch (error) {
+          console.error('Download failed:', error);
+          alert('Download failed. Please try again.');
+        }
+      }
+
+      // Enhanced version with progress feedback
+      function downloadFileWithFeedback(filePath, fileName, fileType = 'pdf') {
+        try {
+          // Show loading state
+          const downloadBtn = event.target;
+          const originalText = downloadBtn.textContent;
+          downloadBtn.textContent = 'Downloading...';
+          downloadBtn.disabled = true;
+          
+          fetch(filePath)
+            .then(response => {
+              if (!response.ok) throw new Error('Download failed');
+              return response.blob();
+            })
+            .then(blob => {
+              const url = window.URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              
+              const extension = fileType === 'pdf' ? '.pdf' : '.docx';
+              const downloadName = fileName ? 
+                (fileName.endsWith(extension) ? fileName : fileName + extension) : 
+                `converted-file${extension}`;
+                
+              link.download = downloadName;
+              document.body.appendChild(link);
+              link.click();
+              
+              // Cleanup
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+              console.error('Download error:', error);
+              alert('Download failed. Please try again.');
+            })
+            .finally(() => {
+              // Reset button state
+              downloadBtn.textContent = originalText;
+              downloadBtn.disabled = false;
+            });
+            
+        } catch (error) {
+          console.error('Download failed:', error);
+          alert('Download failed. Please try again.');
+        }
+      }
+
       function convertMarkdownToHtml(markdown) {
         let html = markdown
           .replace(/^### (.*$)/gim, '<h3>$1</h3>')
@@ -1102,21 +1175,24 @@
         return html;
       }
 
-      // Smooth scrolling for navigation links (commented out to avoid conflicts with download links)
-      /*
-      document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-          e.preventDefault();
-          const href = this.getAttribute('href');
-          if (href.startsWith('#')) {
-            const target = document.querySelector(href);
-            if (target) {
-              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          }
-        });
+      // Global download event handler - replaces querySelector approach
+      document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('download-pdf')) {
+          event.preventDefault();
+          const filePath = event.target.getAttribute('data-file-path') || event.target.href;
+          const fileName = event.target.getAttribute('data-file-name') || 'converted-document';
+          
+          downloadFile(filePath, fileName, 'pdf');
+        }
+        
+        if (event.target.classList.contains('download-docx')) {
+          event.preventDefault();
+          const filePath = event.target.getAttribute('data-file-path') || event.target.href;
+          const fileName = event.target.getAttribute('data-file-name') || 'converted-document';
+          
+          downloadFile(filePath, fileName, 'docx');
+        }
       });
-      */
     });
 
     async function handleSubmit(e, side) {
