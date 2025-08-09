@@ -1102,11 +1102,12 @@
         return html;
       }
 
+      // Smooth scrolling for navigation links (commented out to avoid conflicts with download links)
+      /*
       document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
           e.preventDefault();
           const href = this.getAttribute('href');
-          // Only handle anchor links, not download links
           if (href.startsWith('#')) {
             const target = document.querySelector(href);
             if (target) {
@@ -1115,6 +1116,7 @@
           }
         });
       });
+      */
     });
 
     async function handleSubmit(e, side) {
