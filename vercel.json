@@ -4,5 +4,31 @@
     "api/**/*.js": {
       "maxDuration": 30
     }
-  }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/public/index.html"
+    },
+    {
+      "src": "/blog",
+      "dest": "/public/blog/index.html"
+    },
+    {
+      "src": "/blog/(.*)",
+      "dest": "/public/blog/$1.html"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "/public/static/$1"
+    },
+    {
+      "src": "/ads.txt",
+      "dest": "/public/ads.txt"
+    }
+  ]
 } 

@@ -66,6 +66,10 @@ logs/
 
 # Uploads
 uploads/
+# Don't ignore README.md and other documentation
+!README.md
+!DEPLOYMENT_GUIDE.md
+!PROJECT_SUMMARY.md
 *.md
 *.markdown
 

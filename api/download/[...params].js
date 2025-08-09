@@ -37,9 +37,14 @@ export default async function handler(req, res) {
     // Check if file exists in storage
     if (!fileStorage.has(filename)) {
       console.error('File not found in storage:', filename);
+      console.log('Available files in storage:', fileStorage.getStats());
+      
+      // Return a helpful error message with instructions
       return res.status(404).json({ 
-        error: 'File not found',
-        filename: filename 
+        error: 'File not found or expired',
+        message: 'The uploaded file has expired or was not found. Please upload your file again.',
+        filename: filename,
+        storageStats: fileStorage.getStats()
       });
     }
 

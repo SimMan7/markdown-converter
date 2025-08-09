@@ -13,6 +13,7 @@ import uuid
 from datetime import datetime
 from weasyprint import HTML, CSS
 from weasyprint.text.fonts import FontConfiguration
+import tempfile
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -110,18 +111,24 @@ def upload_file():
     """Handle file upload"""
     try:
         if 'file' not in request.files:
-            flash('No file selected', 'error')
-            return redirect(url_for('index'))
+            return jsonify({
+                'success': False,
+                'error': 'No file selected'
+            }), 400
         
         file = request.files['file']
         
         if file.filename == '':
-            flash('No file selected', 'error')
-            return redirect(url_for('index'))
+            return jsonify({
+                'success': False,
+                'error': 'No file selected'
+            }), 400
         
         if not allowed_file(file.filename):
-            flash('Please upload a valid Markdown file (.md or .markdown)', 'error')
-            return redirect(url_for('index'))
+            return jsonify({
+                'success': False,
+                'error': 'Please upload a valid Markdown file (.md or .markdown)'
+            }), 400
         
         # Generate unique filename to avoid conflicts
         unique_id = str(uuid.uuid4())
@@ -143,16 +150,21 @@ def upload_file():
             extensions=['extra', 'tables', 'codehilite', 'toc']
         )
         
-        flash('File uploaded successfully!', 'success')
-        return render_template('index.html', 
-                             preview_content=html_content, 
-                             filename=filename,
-                             original_filename=file.filename)
+        # Return JSON response for AJAX requests
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'original_filename': file.filename,
+            'preview_html': html_content,
+            'message': 'File uploaded successfully!'
+        })
         
     except Exception as e:
         logging.error(f"Upload error: {e}")
-        flash(f'Error uploading file: {str(e)}', 'error')
-        return redirect(url_for('index'))
+        return jsonify({
+            'success': False,
+            'error': f'Error uploading file: {str(e)}'
+        }), 500
 
 @app.route('/download/<format>/<filename>')
 def download_file(format, filename):
@@ -441,7 +453,8 @@ def download_file(format, filename):
                 font_config = FontConfiguration()
                 
                 # Create PDF from HTML
-                pdf = HTML(string=styled_html).write_pdf(
+                html_doc = HTML(string=styled_html)
+                pdf = html_doc.write_pdf(
                     stylesheets=[],
                     font_config=font_config
                 )
